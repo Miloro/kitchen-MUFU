@@ -1,119 +1,113 @@
-import { useState } from "react";
-import felyChefImage from './img/fely_chef.png';
-import data from './Data';
-import './App.css';
+import { useMemo, useState } from "react";
+import felyChefImage from "./img/fely_chef.png";
+import data from "./Data";
+import "./App.css";
 
-export default function App() {
+const { tabData, emojisTypeIngredient } = data;
 
-  const {tabData,emojisTypeIngredient} = data;
-  const [tabIndex, setTabIndex] = useState(0);
-  const [ingredients, setIngredients] = useState(tabData[0].ingredients);
-  const [selectedTabIndex, setSelectedTabIndex] = useState(0);
-  const currentTab = tabData[tabIndex];
-  const mealsData = currentTab.meals;
-  const selectedIngredients = ingredients.filter((i) => i.selected);
-  const selectedTypes = selectedIngredients.map((i) => i.type);
-
-  function toggleIngredient(index){
-    const newIngredients = [...ingredients];
-    newIngredients[index].selected = !newIngredients[index].selected;
-    setIngredients(newIngredients);
-  }
-
-  function handleTabChange(index){
-    setSelectedTabIndex(index);
-    setTabIndex(index);
-    const resetIngredients = tabData[index].ingredients.map((i) => ({
-      ...i,
-      selected: false,
-    }));
-    setIngredients(resetIngredients);
-  };
-
-  function canMakeMeal(meal) {
-    if (meal.ingredient1 === meal.ingredient2) {
-      let count = selectedTypes.filter((e) => e === meal.ingredient1).length;
-      return count >= 2;
-    } else {
-      return (
-        selectedTypes.includes(meal.ingredient1) &&
-        selectedTypes.includes(meal.ingredient2)
-      );
-    }
-  }
-
-  function getValidIngredientTuple(typeIngredient1, typeIngredient2) {
-    var ingr1 = ingredients
-              .filter(ingr => ingr.type === typeIngredient1 && ingr.selected)
-              .map(ingr => ingr.name);
-    var ingr2 = ingredients
-          .filter(ingr => ingr.type === typeIngredient2 && ingr.selected)
-          .map(ingr => ingr.name);
-    if(typeIngredient1 === typeIngredient2){
-          return (
-          <>
-            <td>{ingr1[0]}</td>
-            <td>{ingr1[1]}</td>
-          </>
-          );
-     }else{
-          return (
-          <>
-            <td>{ingr1[0]}</td>
-            <td>{ingr2[0]}</td>
-          </>
-          );
-    }
-  }
-
-  function emojiDeIngrediente(ingredienteNombre) {
-  const resultado = emojisTypeIngredient.find(
-    (item) => item.name.toLowerCase() === ingredienteNombre.toLowerCase()
+function emojiForType(type) {
+  const found = emojisTypeIngredient.find(
+    (item) => item.name.toLowerCase() === type.toLowerCase()
   );
-  return resultado ? resultado.emoji : null; 
+  return found ? found.emoji : null;
 }
 
+export default function App() {
+  const [tabIndex, setTabIndex] = useState(0);
+  // Only the selected names are stored, so Data.js is never mutated
+  const [selectedNames, setSelectedNames] = useState(() => new Set());
+
+  const currentTab = tabData[tabIndex];
+
+  // Sorted copy (sorting state in place during render caused bugs)
+  const ingredients = useMemo(
+    () =>
+      [...currentTab.ingredients].sort((a, b) => a.name.localeCompare(b.name)),
+    [currentTab]
+  );
+
+  const selectedIngredients = ingredients.filter((i) =>
+    selectedNames.has(i.name)
+  );
+
+  function namesOfType(type) {
+    return selectedIngredients.filter((i) => i.type === type).map((i) => i.name);
+  }
+
+  // Possible meals together with the selected ingredients that make them
+  const meals = currentTab.meals
+    .map((meal) => {
+      const first = namesOfType(meal.ingredient1);
+      if (meal.ingredient1 === meal.ingredient2) {
+        return first.length >= 2 ? { ...meal, names: [first[0], first[1]] } : null;
+      }
+      const second = namesOfType(meal.ingredient2);
+      return first.length && second.length
+        ? { ...meal, names: [first[0], second[0]] }
+        : null;
+    })
+    .filter(Boolean);
+
+  function toggleIngredient(name) {
+    setSelectedNames((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  }
+
+  function handleTabChange(index) {
+    setTabIndex(index);
+    setSelectedNames(new Set());
+  }
+
   return (
-    <div>
-      {/* Pestañas */}
-      <div className="button-container">
+    <div className="app">
+      <nav className="tabs" aria-label="Kitchens">
         {tabData.map((tab, index) => (
-          <button className={`btn-with-image ${selectedTabIndex === index ? "selected-tab" : ""}`}
-            key={index}
-            onClick={() => handleTabChange(index)}>
-            <img src={felyChefImage} alt="Fely Chef" className="btn-image" />
-            <span className="btn-label">{tab.label}</span>
+          <button
+            type="button"
+            key={tab.label}
+            className={`tab ${tabIndex === index ? "tab--selected" : ""}`}
+            aria-pressed={tabIndex === index}
+            onClick={() => handleTabChange(index)}
+          >
+            <img src={felyChefImage} alt="" className="tab__image" />
+            <span className="tab__label">{tab.label}</span>
           </button>
         ))}
-      </div>
-      {/* Contenido */}
-      <div className="flex-container">
-          <div class="card card--ingredients">
-            <div class = "margin-table">
-              <table className="table-center" border="1" cellPadding="0" cellSpacing="0">
-                <tbody>
-                  {ingredients
-                    .sort((a, b) => a.name.localeCompare(b.name))
-                    .map((ing, i) => (
-                      <tr key={ing.name}>
-                        <td className={`align-left ingredient-cell ${ingredients[i].selected ? 'selected' : ''}`} >
-                          <div className="row-flex" onClick={() => toggleIngredient(i)}>
-                            <span className="emoji">{emojiDeIngrediente(ing.type)}</span>
-                            <span className={`ingredient ${ing.selected ? "selected" : ""}`}>
-                              {ing.name}
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+      </nav>
 
-        <div class="card card--meals">
-          <div class = "margin-table">
-            <table border="1" cellPadding="5" cellSpacing="0">
+      <main className="layout">
+        <section className="card card--ingredients" aria-label="Ingredients">
+          <div className="card__scroll">
+            <ul className="ingredient-list">
+              {ingredients.map((ing) => {
+                const selected = selectedNames.has(ing.name);
+                return (
+                  <li key={ing.name}>
+                    <button
+                      type="button"
+                      className={`ingredient ${selected ? "ingredient--selected" : ""}`}
+                      aria-pressed={selected}
+                      onClick={() => toggleIngredient(ing.name)}
+                    >
+                      <span className="ingredient__emoji" aria-hidden="true">
+                        {emojiForType(ing.type)}
+                      </span>
+                      <span className="ingredient__name">{ing.name}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </section>
+
+        <section className="card card--meals" aria-label="Meals">
+          <div className="card__scroll">
+            <table className="meals-table">
               <thead>
                 <tr>
                   <th>Ingredient 1</th>
@@ -122,17 +116,21 @@ export default function App() {
                 </tr>
               </thead>
               <tbody>
-                {mealsData.filter(canMakeMeal).map((meal, i) => (
-                  <tr key={i}>
-                    {getValidIngredientTuple(meal.ingredient1,meal.ingredient2)}
-                    <td>{meal.effect}</td>
+                {meals.map((meal) => (
+                  <tr key={`${meal.ingredient1}-${meal.ingredient2}`}>
+                    <td>{meal.names[0]}</td>
+                    <td>{meal.names[1]}</td>
+                    <td className="meals-table__effect">{meal.effect}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            {meals.length === 0 && (
+              <p className="empty">Select ingredients to see the available meals</p>
+            )}
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 }

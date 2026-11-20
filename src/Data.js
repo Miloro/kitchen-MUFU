@@ -51,7 +51,7 @@ const tabData = [
       { name: "Sliced Cactus", type: "Veggie", selected: false },
       { name: "Spotted Onion", type: "Veggie", selected: false },
       { name: "Young Potato", type: "Veggie", selected: false },
-      { name: "Aged Cheest", type: "Milk", selected: false },
+      { name: "Aged Cheese", type: "Milk", selected: false },
       { name: "Carefree Yogurt", type: "Milk", selected: false },
       { name: "Furahiya Cola", type: "Drink", selected: false }
     ],
@@ -162,7 +162,7 @@ const tabData = [
       { name: "King Turkey", type: "Meat", selected: false },
       { name: "Gold Rice", type: "Bran", selected: false },
       { name: "Heaven Bread", type: "Bran", selected: false },
-      { name: "Sould Beans", type: "Bran", selected: false },
+      { name: "Soul Beans", type: "Bran", selected: false },
       { name: "1000-Year Crab", type: "Fish", selected: false },
       { name: "Crimson Seabream", type: "Fish", selected: false },
       { name: "Hairy Tuna", type: "Fish", selected: false },
